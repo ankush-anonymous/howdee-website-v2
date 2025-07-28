@@ -1,181 +1,38 @@
-"use client"
+import React, { useEffect, useRef } from "react";
+import { Sparkles } from "lucide-react";
 
-import { useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Sparkles } from "lucide-react"
-import { gsap } from "gsap"
-import { ScrollTrigger } from "gsap/ScrollTrigger"
-
-gsap.registerPlugin(ScrollTrigger)
-
-const greetingCards = [
+const greetingVideos = [
   {
     id: 1,
-    image: "/placeholder.svg?height=300&width=400",
-    alt: "Birthday Greeting Card",
+    video:
+      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1753731143/sample-vid-1_zdd469.mp4",
+    alt: "Birthday Greeting Video",
   },
   {
     id: 2,
-    image: "/placeholder.svg?height=300&width=400",
-    alt: "Anniversary Greeting Card",
+    video:
+      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1753731154/sample-vid-2_fnnihc.mp4",
+    alt: "Anniversary Greeting Video",
   },
   {
     id: 3,
-    image: "/placeholder.svg?height=300&width=400",
-    alt: "Holiday Greeting Card",
+    video:
+      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1753731149/dbc4208f-4f17-48d6-bc90-64261b484710_watermark_wdq90r.mp4",
+    alt: "Holiday Greeting Video",
   },
-]
+];
 
 export default function WishWithLove() {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const titleRef = useRef<HTMLHeadingElement>(null)
-  const subtitleRef = useRef<HTMLParagraphElement>(null)
-  const cardsRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Title animation
-      gsap.fromTo(
-        titleRef.current,
-        {
-          opacity: 0,
-          y: 50,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: titleRef.current,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse",
-          },
-        },
-      )
-
-      // Subtitle animation
-      gsap.fromTo(
-        subtitleRef.current,
-        {
-          opacity: 0,
-          y: 30,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          delay: 0.2,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: subtitleRef.current,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse",
-          },
-        },
-      )
-
-      // Cards animation
-      const cards = cardsRef.current?.children
-      if (cards) {
-        gsap.fromTo(
-          cards,
-          {
-            opacity: 0,
-            y: 60,
-            scale: 0.8,
-            rotationY: 15,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            rotationY: 0,
-            duration: 1,
-            stagger: 0.2,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: cardsRef.current,
-              start: "top 80%",
-              end: "bottom 20%",
-              toggleActions: "play none none reverse",
-            },
-          },
-        )
-
-        // Hover animations for cards
-        Array.from(cards).forEach((card) => {
-          const cardElement = card as HTMLElement
-
-          cardElement.addEventListener("mouseenter", () => {
-            gsap.to(cardElement, {
-              scale: 1.05,
-              rotationY: -5,
-              z: 50,
-              duration: 0.3,
-              ease: "power2.out",
-            })
-          })
-
-          cardElement.addEventListener("mouseleave", () => {
-            gsap.to(cardElement, {
-              scale: 1,
-              rotationY: 0,
-              z: 0,
-              duration: 0.3,
-              ease: "power2.out",
-            })
-          })
-        })
-      }
-
-      // Button animation
-      gsap.fromTo(
-        buttonRef.current,
-        {
-          opacity: 0,
-          y: 40,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          delay: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: buttonRef.current,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse",
-          },
-        },
-      )
-
-      // Floating animation for cards
-      if (cards) {
-        Array.from(cards).forEach((card, index) => {
-          gsap.to(card, {
-            y: "+=10",
-            duration: 2 + index * 0.5,
-            repeat: -1,
-            yoyo: true,
-            ease: "power2.inOut",
-            delay: index * 0.3,
-          })
-        })
-      }
-    }, sectionRef)
-
-    return () => ctx.revert()
-  }, [])
+  const sectionRef = useRef(null);
+  const titleRef = useRef(null);
+  const subtitleRef = useRef(null);
+  const cardsRef = useRef(null);
+  const buttonRef = useRef(null);
 
   return (
     <section
       ref={sectionRef}
-      className="py-20 px-8"
+      className="py-20 px-8 relative h-max"
       style={{
         backgroundColor: "#ff6b6b",
         fontFamily: "Arial, sans-serif",
@@ -188,62 +45,88 @@ export default function WishWithLove() {
         </h2>
 
         {/* Subtitle */}
-        <p ref={subtitleRef} className="text-xl text-pink-100 mb-16 max-w-2xl mx-auto">
+        <p
+          ref={subtitleRef}
+          className="text-xl text-pink-100 mb-16 max-w-2xl mx-auto"
+        >
           Make stunning AI greetings with just one voice command
         </p>
 
-        {/* Cards Grid */}
-        <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {greetingCards.map((card) => (
+        {/* Videos Grid */}
+        <div
+          ref={cardsRef}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16"
+        >
+          {greetingVideos.map((item, index) => (
             <div
-              key={card.id}
-              className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
+              key={item.id}
+              className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105"
               style={{
-                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
+                background:
+                  "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
                 border: "2px solid rgba(255, 255, 255, 0.2)",
+                animation: `float${index + 1} 3s ease-in-out infinite`,
+                height: "530px", // set a fixed height for all cards
               }}
             >
-              {/* Image */}
-              <div className="aspect-[4/3] overflow-hidden">
-                <img
-                  src={card.image || "/placeholder.svg"}
-                  alt={card.alt}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              {/* Video Wrapper */}
+              <div className="overflow-hidden relative w-full h-full">
+                <div className="absolute top-[20px] bottom-[20px] left-0 right-0 overflow-hidden">
+                  <video
+                    src={item.video}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onError={(e) => {
+                      console.log(`Error loading video: ${item.video}`);
+                    }}
+                  />
+                </div>
+
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Sparkles */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Sparkles className="w-6 h-6 text-white drop-shadow-lg animate-pulse" />
+                </div>
+
+                {/* Play Pulse */}
+                <div className="absolute top-4 left-4 bg-black/20 backdrop-blur-sm rounded-full p-2 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+                </div>
+
+                {/* Glow effect */}
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none"
+                  style={{
+                    boxShadow: `0 0 30px rgba(255, 255, 255, 0.5)`,
+                  }}
                 />
               </div>
-
-              {/* Overlay effect on hover */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              {/* Sparkle effect */}
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Sparkles className="w-6 h-6 text-white drop-shadow-lg animate-pulse" />
-              </div>
-
-              {/* Glow effect */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none"
-                style={{
-                  boxShadow: `0 0 30px rgba(255, 255, 255, 0.5)`,
-                }}
-              />
             </div>
           ))}
         </div>
 
         {/* Generate Button */}
         <div ref={buttonRef}>
-          <Button
-            size="lg"
-            className="bg-white font-semibold px-12 py-4 text-lg rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group"
+          <button
+            className="group bg-white font-semibold px-12 py-4 text-lg rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
             style={{ color: "#ff6b6b" }}
           >
-            Generate for Free
-            <Sparkles
-              className="w-5 h-5 ml-3 group-hover:animate-spin transition-transform duration-300"
-              style={{ color: "#ff6b6b" }}
-            />
-          </Button>
+            {/* Hover background effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-50 to-red-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+            <span className="relative z-10 flex items-center">
+              Generate for Free
+              <Sparkles
+                className="w-5 h-5 ml-3 group-hover:animate-spin transition-transform duration-300"
+                style={{ color: "#ff6b6b" }}
+              />
+            </span>
+          </button>
         </div>
 
         {/* Decorative elements */}
@@ -257,6 +140,48 @@ export default function WishWithLove() {
           style={{ animationDelay: "2s" }}
         />
       </div>
+
+      {/* Floating animations */}
+      <style jsx>{`
+        @keyframes float1 {
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          33% {
+            transform: translateY(-10px) rotate(1deg);
+          }
+          66% {
+            transform: translateY(-5px) rotate(-1deg);
+          }
+        }
+
+        @keyframes float2 {
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          33% {
+            transform: translateY(-8px) rotate(-1deg);
+          }
+          66% {
+            transform: translateY(-12px) rotate(1deg);
+          }
+        }
+
+        @keyframes float3 {
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          33% {
+            transform: translateY(-6px) rotate(1deg);
+          }
+          66% {
+            transform: translateY(-10px) rotate(-1deg);
+          }
+        }
+      `}</style>
     </section>
-  )
+  );
 }

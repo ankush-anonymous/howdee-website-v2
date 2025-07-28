@@ -64,12 +64,29 @@ export default function PersonalizedCreativeFlow() {
         <div className="absolute top-1/4 left-1/4 w-6 h-6 rounded-full opacity-15 animate-float" style={{ backgroundColor: "#ff6b6b" }}></div>
 
         <div className="text-center space-y-6 z-10 px-8">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.6 }} className="mb-8">
-            <h2 className="text-5xl font-bold mb-4" style={{ color: "#ff6b6b" }}>
-              Flow of Howdee
-            </h2>
-            <p className="text-xl text-gray-700 font-medium">Follow the steps to get your Howdee creative</p>
-          </motion.div>
+         <motion.div
+  initial={{ scale: 0.9, opacity: 0 }}
+  animate={{ scale: 1, opacity: 1 }}
+  transition={{ duration: 0.6 }}
+  className="mb-8 text-center"
+>
+  <h2 className="text-5xl font-bold mb-4 text-[#ff6b6b] flex flex-wrap items-center justify-center gap-2">
+    Flow of
+    <span className="flex items-center">
+      {/* Replace "H" with logo image */}
+      <img
+        src="/logo2.png"
+        alt="H logo"
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+      />
+      <span>owdee</span>
+    </span>
+  </h2>
+
+  <p className="text-xl text-gray-700 font-medium">
+    Follow the steps to get your Howdee creative
+  </p>
+</motion.div>
 
           <div className="flex justify-center gap-4 py-6">
             {steps.map((_, index) => (

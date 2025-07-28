@@ -16,10 +16,10 @@ export default function HomePage() {
       <nav className="flex items-center justify-between px-8 py-6 relative z-10">
         <div className="flex items-center space-x-3">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
             style={{ backgroundColor: "#ff6b6b" }}
           >
-            H
+            <img src="/logo2.png" alt="Logo" className="w-8 h-8" />
           </div>
           <span className="text-2xl font-bold text-gray-800">Howdee</span>
         </div>

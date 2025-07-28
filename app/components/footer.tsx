@@ -25,11 +25,12 @@ export default function Footer() {
           {/* About Howdee */}
           <div className="md:col-span-2">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-xl font-bold" style={{ color: "#ff6b6b" }}>
-                  H
-                </span>
-              </div>
+               <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+            style={{ backgroundColor: "#ff6b6b" }}
+          >
+            <img src="/logo2.png" alt="Logo" className="w-8 h-8" />
+          </div>
               <h3 className="text-2xl font-bold text-white">Howdee</h3>
             </div>
             <h4 className="text-xl font-semibold text-white mb-4">About Howdee</h4>
