@@ -56,7 +56,7 @@ const HeroSection = () => {
 
         {/* Tagline */}
         <p className="text-2xl font-bold text-gray-700">
-          Your personal Marketing and branding agency
+          Your Personal Marketing and Branding Agency
         </p>
 
          <div className="pt-4">
@@ -69,7 +69,7 @@ const HeroSection = () => {
             
             {/* Button text */}
             <span className="relative z-10 group-hover:text-white transition-colors duration-300">
-              Generate Now!
+              Try Now for Free!!
             </span>
             
             {/* Animated sparkle effect */}

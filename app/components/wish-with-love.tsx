@@ -32,7 +32,7 @@ export default function WishWithLove() {
   return (
     <section
       ref={sectionRef}
-      className="py-20 px-8 relative h-max"
+      className="py-12 px-8 relative h-max"
       style={{
         backgroundColor: "#ff6b6b",
         fontFamily: "Arial, sans-serif",
@@ -40,14 +40,14 @@ export default function WishWithLove() {
     >
       <div className="max-w-6xl mx-auto text-center">
         {/* Title */}
-        <h2 ref={titleRef} className="text-5xl font-bold mb-6 text-white">
+        <h2 ref={titleRef} className="text-5xl font-bold mb-4 text-white">
           Wish with Love
         </h2>
 
         {/* Subtitle */}
         <p
           ref={subtitleRef}
-          className="text-xl text-pink-100 mb-16 max-w-2xl mx-auto"
+          className="text-xl text-pink-100 mb-10 max-w-2xl mx-auto"
         >
           Make stunning AI greetings with just one voice command
         </p>
@@ -66,7 +66,7 @@ export default function WishWithLove() {
                   "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
                 border: "2px solid rgba(255, 255, 255, 0.2)",
                 animation: `float${index + 1} 3s ease-in-out infinite`,
-                height: "530px", // set a fixed height for all cards
+                height: "538px", // set a fixed height for all cards
               }}
             >
               {/* Video Wrapper */}
@@ -120,7 +120,7 @@ export default function WishWithLove() {
             <div className="absolute inset-0 bg-gradient-to-r from-pink-50 to-red-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
             <span className="relative z-10 flex items-center">
-              Generate for Free
+              Create Now
               <Sparkles
                 className="w-5 h-5 ml-3 group-hover:animate-spin transition-transform duration-300"
                 style={{ color: "#ff6b6b" }}

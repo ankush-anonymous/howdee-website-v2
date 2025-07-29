@@ -139,8 +139,8 @@ export default function TestimonialsSection() {
           {/* Right side - Content */}
           <div className="text-white lg:pl-12 text-center lg:text-left">
             <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold mb-6 lg:mb-8 leading-tight text-white">
-              What Our <br />
-              Users Say
+              India Wishes<br />
+              with Howdee
             </h2>
             <p className="text-lg text-pink-100 mb-8 leading-relaxed max-w-md mx-auto lg:mx-0">
               Hear from our amazing users who have created stunning personalized greetings with Howdee's AI magic.

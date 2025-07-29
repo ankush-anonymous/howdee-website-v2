@@ -199,7 +199,7 @@ export default function ContactSection() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-800">Email Us</p>
-                    <p className="text-gray-600">hello@howdee.ai</p>
+                    <p className="text-gray-600">hey.howdee@gmail.com</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -211,7 +211,7 @@ export default function ContactSection() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-800">Call Us</p>
-                    <p className="text-gray-600">+91 98765 43210</p>
+                    <p className="text-gray-600">+91 986 770 8530</p>
                   </div>
                 </div>
               </div>

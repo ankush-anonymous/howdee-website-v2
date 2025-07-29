@@ -7,6 +7,7 @@ import HeroSection from "./components/hero-section"
 import TestimonialsSection from "./components/testimonials"
 import ContactSection from "./components/contact-section"
 import Footer from "./components/footer"
+import Link from "next/link"
 
 
 export default function HomePage() {
@@ -23,7 +24,7 @@ export default function HomePage() {
           </div>
           <span className="text-2xl font-bold text-gray-800">Howdee</span>
         </div>
-
+        <Link href="/chat">
         <Button
           variant="outline"
           className="border-2 hover:bg-opacity-10 transition-all duration-300 font-semibold px-6 bg-transparent"
@@ -32,8 +33,9 @@ export default function HomePage() {
             color: "#ff6b6b",
           }}
         >
-          Sign In
+          Chat Now
         </Button>
+        </Link>
       </nav>
 
       {/* Hero Section */}
