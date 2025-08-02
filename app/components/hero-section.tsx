@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 
 const HeroSection = () => {
@@ -60,6 +61,8 @@ const HeroSection = () => {
         </p>
 
          <div className="pt-4">
+                  <Link href="/chat">
+
           <button
             className="group relative px-8 py-4 text-lg font-bold text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
             style={{ backgroundColor: "#ff6b6b" }}
@@ -80,6 +83,7 @@ const HeroSection = () => {
             {/* Ripple effect on hover */}
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-20 group-hover:animate-ping bg-white" />
           </button>
+          </Link>
         </div>
       </div>
     </div>

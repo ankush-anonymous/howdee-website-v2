@@ -24,8 +24,8 @@ export default function HomePage() {
           </div>
           <span className="text-2xl font-bold text-gray-800">Howdee</span>
         </div>
-        <Link href="/chat">
-        <Button
+        {/* <Link href="/chat"> */}
+        {/* <Button
           variant="outline"
           className="border-2 hover:bg-opacity-10 transition-all duration-300 font-semibold px-6 bg-transparent"
           style={{
@@ -34,7 +34,7 @@ export default function HomePage() {
           }}
         >
           Try Now
-        </Button>
+        </Button> */}
         <Button
           variant="outline"
           className="border-2 hover:bg-opacity-10 transition-all duration-300 font-semibold px-6 bg-transparent ml-2"
@@ -45,7 +45,7 @@ export default function HomePage() {
         >
          Login
         </Button>
-        </Link>
+        {/* </Link> */}
       </nav>
 
       {/* Hero Section */}
