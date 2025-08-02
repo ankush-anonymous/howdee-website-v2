@@ -33,7 +33,17 @@ export default function HomePage() {
             color: "#ff6b6b",
           }}
         >
-          Chat Now
+          Try Now
+        </Button>
+        <Button
+          variant="outline"
+          className="border-2 hover:bg-opacity-10 transition-all duration-300 font-semibold px-6 bg-transparent ml-2"
+          style={{
+            borderColor: "#ff6b6b",
+            color: "#ff6b6b",
+          }}
+        >
+         Login
         </Button>
         </Link>
       </nav>
