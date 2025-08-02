@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Camera, Upload, ArrowLeft, Play, Download, Loader2 } from 'lucide-react';
+import { Send, Mic, MicOff, Camera, Upload, ArrowLeft, Play, Download, Loader2, Video } from 'lucide-react';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
@@ -20,7 +20,8 @@ const ChatInterface = () => {
   const [uploadedImage, setUploadedImage] = useState(false);
   const [hasVoiceOrText, setHasVoiceOrText] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [imageFile, setImageFile] = useState(null); // New state to store the image file
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
   
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -28,7 +29,7 @@ const ChatInterface = () => {
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const BACKEND_API_URL = "http://localhost:5000"; // Replace with your actual backend URL
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -56,7 +57,7 @@ const ChatInterface = () => {
       setInputText(savedTranscript);
     }
     setInputText("")
-    localStorage.removeItem('transcript'); // Clear after loading
+    localStorage.removeItem('transcript');
   }, []);
 
   const formatTime = (seconds) => {
@@ -108,20 +109,20 @@ const ChatInterface = () => {
     }
   };
 
-const handleSendText = () => {
-  if (inputText.trim() && uploadedImage && imageFile) {
-    addMessage("user", inputText.trim());
-    setIsProcessing(true);
-    sendImageAndPromptToBackend(inputText.trim(), imageFile);
-    setInputText('');
-  }
-};
+  const handleSendText = () => {
+    if (inputText.trim() && uploadedImage && imageFile) {
+      addMessage("user", inputText.trim());
+      setIsProcessing(true);
+      sendImageAndPromptToBackend(inputText.trim(), imageFile);
+      setInputText('');
+    }
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setImageFile(file); // Store the image file
+      setImageFile(file);
       addMessage("user", "I've uploaded an image", "image", url);
     }
     event.target.value = '';
@@ -131,7 +132,7 @@ const handleSendText = () => {
     const file = event.target.files[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setImageFile(file); // Store the image file
+      setImageFile(file);
       addMessage("user", "I've captured an image", "image", url);
     }
     event.target.value = '';
@@ -216,50 +217,99 @@ const handleSendText = () => {
     }
   };
 
-const sendImageAndPromptToBackend = async (prompt, imageFile) => {
-  try {
-    console.log("📤 Sending image and prompt to backend...");
-    
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('selfie', imageFile); // Changed 'image' to 'selfie' to match backend expectation
-    
-    console.log("📋 FormData prepared:", {
-      prompt,
-      imageName: imageFile.name,
-      imageType: imageFile.type,
-      imageSize: imageFile.size
-    });
-    
-    const response = await fetch(`${BACKEND_API_URL}/api/v1/image/generate-image`, {
-      method: 'POST',
-      body: formData,
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      console.log("✅ Backend response:", result);
+  const sendImageAndPromptToBackend = async (prompt, imageFile) => {
+    try {
+      console.log("📤 Sending image and prompt to backend...");
       
-      if (result.success && result.generatedImage) {
-        localStorage.setItem('generatedImage', result.generatedImage);
-        addMessage("bot", "Here's your generated image!", "fusion", result.generatedImage);
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      formData.append('selfie', imageFile);
+      
+      console.log("📋 FormData prepared:", {
+        prompt,
+        imageName: imageFile.name,
+        imageType: imageFile.type,
+        imageSize: imageFile.size
+      });
+      
+      const response = await fetch(`${BACKEND_API_URL}/api/v1/image/generate-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Backend response:", result);
+        
+        if (result.success && result.generatedImage) {
+          localStorage.setItem('generatedImage', result.generatedImage);
+          addMessage("bot", "Here's your generated image!", "fusion", result.generatedImage);
+        } else {
+          addMessage("bot", "Sorry, something went wrong while generating the image.");
+        }
       } else {
-        addMessage("bot", "Sorry, something went wrong while generating the image.");
+        console.error("❌ Backend error:", response.status, response.statusText);
+        addMessage("bot", "Failed to generate image. Please try again.");
       }
-    } else {
-      console.error("❌ Backend error:", response.status, response.statusText);
-      addMessage("bot", "Failed to generate image. Please try again.");
+      setImageFile(null);
+      setUploadedImage(false);
+      setHasVoiceOrText(false);
+    } catch (error) {
+      console.error("❌ Error sending image and prompt to backend:", error);
+      addMessage("bot", "An error occurred while processing your request.");
+    } finally {
+      setIsProcessing(false);
     }
-    setImageFile(null);
-setUploadedImage(false);
-setHasVoiceOrText(false);
-  } catch (error) {
-    console.error("❌ Error sending image and prompt to backend:", error);
-    addMessage("bot", "An error occurred while processing your request.");
-  } finally {
-    setIsProcessing(false);
-  }
-};
+  };
+
+  const handleAnimateImage = async () => {
+    const generatedImage = localStorage.getItem('generatedImage');
+    
+    if (!generatedImage) {
+      addMessage("bot", "No generated image found to animate. Please generate an image first!");
+      return;
+    }
+
+    setIsAnimating(true);
+    addMessage("bot", "✨ Animating your image... This may take a moment!");
+
+    try {
+      console.log("🎬 Sending image for animation...");
+      
+      const animationData = {
+        imageUrl: generatedImage,
+        prompt: "give a very slight animation to blink her eyes, make her hair seem like getting a slight blow due to flowing air and show blowing effect on diya as well"
+      };
+
+      const response = await fetch(`${BACKEND_API_URL}/api/v1/video/generate-professional-video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(animationData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Animation response:", result);
+        
+        if (result.success && result.videoUrl) {
+          addMessage("bot", "🎬 Your animated video is ready!", "video", result.videoUrl);
+          localStorage.setItem('animatedVideo', result.videoUrl);
+        } else {
+          addMessage("bot", "Sorry, something went wrong while animating the image.");
+        }
+      } else {
+        console.error("❌ Animation error:", response.status, response.statusText);
+        addMessage("bot", "Failed to animate image. Please try again.");
+      }
+    } catch (error) {
+      console.error("❌ Error animating image:", error);
+      addMessage("bot", "An error occurred while animating your image.");
+    } finally {
+      setIsAnimating(false);
+    }
+  };
 
   const handleTranscriptConfirmation = (isConfirmed, transcriptText) => {
     if (isConfirmed) {
@@ -277,6 +327,13 @@ setHasVoiceOrText(false);
     const link = document.createElement('a');
     link.href = url;
     link.download = 'fusion-image.png';
+    link.click();
+  };
+
+  const downloadVideo = (url) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'animated-video.mp4';
     link.click();
   };
 
@@ -371,12 +428,41 @@ setHasVoiceOrText(false);
                     alt="Processed content"
                     className="w-full h-48 object-cover rounded-lg"
                   />
+                  <div className="flex space-x-2 mt-2">
+                    <button
+                      onClick={() => downloadImage(message.mediaUrl)}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                    >
+                      <Download className="w-4 h-4 mr-2 inline" />
+                      Download Image
+                    </button>
+                    <button
+                      onClick={handleAnimateImage}
+                      disabled={isAnimating}
+                      className="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Video className="w-4 h-4 mr-2 inline" />
+                      {isAnimating ? "Animating..." : "Animate"}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {message.mediaType === "video" && message.mediaUrl && (
+                <div className="mb-2">
+                  <video
+                    src={message.mediaUrl}
+                    controls
+                    className="w-full h-48 object-cover rounded-lg"
+                    poster=""
+                  >
+                    Your browser does not support the video element.
+                  </video>
                   <button
-                    onClick={() => downloadImage(message.mediaUrl)}
-                    className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                    onClick={() => downloadVideo(message.mediaUrl)}
+                    className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                   >
                     <Download className="w-4 h-4 mr-2 inline" />
-                    Download Image
+                    Download Video
                   </button>
                 </div>
               )}
@@ -390,11 +476,18 @@ setHasVoiceOrText(false);
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Processing Indicator */}
+      {/* Processing Indicators */}
       {isProcessing && (
         <div className="mx-4 mb-4 flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border-2 border-purple-200">
           <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
           <span className="text-purple-600 font-medium">Processing your content... ✨</span>
+        </div>
+      )}
+
+      {isAnimating && (
+        <div className="mx-4 mb-4 flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border-2 border-blue-200">
+          <Video className="w-5 h-5 text-blue-600 animate-pulse" />
+          <span className="text-blue-600 font-medium">Creating your animated video... 🎬</span>
         </div>
       )}
 
@@ -416,10 +509,10 @@ setHasVoiceOrText(false);
           <div className="flex space-x-2">
             <button
               onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing}
+              disabled={isProcessing || isAnimating}
               className={`border-2 p-2 rounded transition-all duration-300 ${
                 isRecording ? "bg-red-500 border-red-500 text-white hover:bg-red-600" : "hover:scale-105"
-              } ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${(isProcessing || isAnimating) ? "opacity-50 cursor-not-allowed" : ""}`}
               style={{
                 borderColor: isRecording ? "#ef4444" : "#ff6b6b",
                 color: isRecording ? "white" : "#ff6b6b",
@@ -429,7 +522,7 @@ setHasVoiceOrText(false);
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={isRecording || isProcessing}
+              disabled={isRecording || isProcessing || isAnimating}
               className="border-2 p-2 rounded hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ borderColor: "#ff6b6b", color: "#ff6b6b" }}
             >
@@ -437,7 +530,7 @@ setHasVoiceOrText(false);
             </button>
             <button
               onClick={() => cameraInputRef.current?.click()}
-              disabled={isRecording || isProcessing}
+              disabled={isRecording || isProcessing || isAnimating}
               className="border-2 p-2 rounded hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ borderColor: "#ff6b6b", color: "#ff6b6b" }}
             >
@@ -452,21 +545,23 @@ setHasVoiceOrText(false);
               placeholder={
                 isProcessing 
                   ? "Processing content..." 
-                  : isRecording 
-                    ? "Recording..." 
-                    : !uploadedImage
-                      ? "Please upload an image first! 📸"
-                      : "Now tell me what to do with your image..."
+                  : isAnimating
+                    ? "Creating animation..."
+                    : isRecording 
+                      ? "Recording..." 
+                      : !uploadedImage
+                        ? "Please upload an image first! 📸"
+                        : "Now tell me what to do with your image..."
               }
               className="flex-1 border-2 rounded-xl p-3 focus:ring-2 transition-all duration-300"
               style={{
                 borderColor: "rgba(255, 107, 107, 0.3)",
               }}
-              disabled={isRecording || isProcessing}
+              disabled={isRecording || isProcessing || isAnimating}
             />
             <button
               onClick={handleSendText}
-              disabled={!inputText.trim() || isRecording || isProcessing || !uploadedImage}
+              disabled={!inputText.trim() || isRecording || isProcessing || isAnimating || !uploadedImage}
               className="text-white font-medium px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: "#ff6b6b" }}
             >
