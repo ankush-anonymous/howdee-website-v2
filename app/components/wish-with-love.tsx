@@ -11,13 +11,36 @@ const greetingVideos = [
   {
     id: 2,
     video:
-      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1753731154/sample-vid-2_fnnihc.mp4",
+      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1754118624/howdee-v1_lneref.mp4",
     alt: "Anniversary Greeting Video",
   },
   {
     id: 3,
     video:
       "https://res.cloudinary.com/dqiqtx7er/video/upload/v1753731149/dbc4208f-4f17-48d6-bc90-64261b484710_watermark_wdq90r.mp4",
+    alt: "Holiday Greeting Video",
+  },
+ 
+];
+
+const greetingVideos2 = [
+  
+  {
+    id: 4,
+    video:
+      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1754118610/sample-vid-4_bg8qds.mp4",
+    alt: "Holiday Greeting Video",
+  },
+  {
+    id: 5,
+    video:
+      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1754118615/sample-vid-5_km9hrf.mp4",
+    alt: "Holiday Greeting Video",
+  },
+  {
+    id: 6,
+    video:
+      "https://res.cloudinary.com/dqiqtx7er/video/upload/v1754118616/sample-vid-6_tjcdmt.mp4",
     alt: "Holiday Greeting Video",
   },
 ];
@@ -67,6 +90,62 @@ export default function WishWithLove() {
                 border: "2px solid rgba(255, 255, 255, 0.2)",
                 animation: `float${index + 1} 3s ease-in-out infinite`,
                 height: "538px", // set a fixed height for all cards
+              }}
+            >
+              {/* Video Wrapper */}
+              <div className="overflow-hidden relative w-full h-full">
+                <div className="absolute top-[20px] bottom-[20px] left-0 right-0 overflow-hidden">
+                  <video
+                    src={item.video}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onError={(e) => {
+                      console.log(`Error loading video: ${item.video}`);
+                    }}
+                  />
+                </div>
+
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Sparkles */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Sparkles className="w-6 h-6 text-white drop-shadow-lg animate-pulse" />
+                </div>
+
+                {/* Play Pulse */}
+                <div className="absolute top-4 left-4 bg-black/20 backdrop-blur-sm rounded-full p-2 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+                </div>
+
+                {/* Glow effect */}
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none"
+                  style={{
+                    boxShadow: `0 0 30px rgba(255, 255, 255, 0.5)`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div
+          ref={cardsRef}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16"
+        >
+          {greetingVideos2.map((item, index) => (
+            <div
+              key={item.id}
+              className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
+                border: "2px solid rgba(255, 255, 255, 0.2)",
+                animation: `float${index + 1} 3s ease-in-out infinite`,
+                height: "550px", // set a fixed height for all cards
               }}
             >
               {/* Video Wrapper */}
