@@ -20,6 +20,7 @@ const ChatInterface = () => {
   const [uploadedImage, setUploadedImage] = useState(false);
   const [hasVoiceOrText, setHasVoiceOrText] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [imageFile, setImageFile] = useState(null); // New state to store the image file
   
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -27,8 +28,7 @@ const ChatInterface = () => {
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
-    const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
+  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -45,8 +45,19 @@ const ChatInterface = () => {
       clearInterval(recordingIntervalRef.current);
       setRecordingTime(0);
     }
+    
     return () => clearInterval(recordingIntervalRef.current);
   }, [isRecording]);
+
+  // Load transcript from localStorage on mount
+  useEffect(() => {
+    const savedTranscript = localStorage.getItem('transcript');
+    if (savedTranscript) {
+      setInputText(savedTranscript);
+    }
+    setInputText("")
+    localStorage.removeItem('transcript'); // Clear after loading
+  }, []);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -62,15 +73,14 @@ const ChatInterface = () => {
       timestamp: new Date(),
       mediaType,
       mediaUrl,
-      audioFile, // Store the file for backend submission
-      transcriptText // Store transcript for confirmation
+      audioFile,
+      transcriptText
     };
     setMessages(prev => [...prev, newMessage]);
     
     if (type === "user") {
       if (mediaType === "image") {
         setUploadedImage(true);
-        // Bot prompts for next step after image upload
         setTimeout(() => {
           addMessage("bot", "Great! I can see your image. Now please provide instructions by typing a message or recording a voice note about what you'd like me to do with this image! 🎤✍️");
         }, 1000);
@@ -78,34 +88,14 @@ const ChatInterface = () => {
       }
       
       if (mediaType === "audio") {
-        // For audio messages, we'll wait for transcription confirmation
-        // Don't set hasVoiceOrText here, wait for user confirmation
         return;
       }
       
       if (mediaType === null && content.trim()) {
         setHasVoiceOrText(true);
-        
-        // Check if both conditions are met
-        if (uploadedImage) {
-          console.log("🚀 DEBUG: Both conditions met!");
-          console.log("📸 Image uploaded:", uploadedImage);
-          console.log("💬 Text provided:", content);
-          console.log("🎯 Ready to process!");
-          
-          // Auto-process when both conditions are met
-          setTimeout(() => {
-            handleProcessContent();
-          }, 1500);
-        } else {
-          setTimeout(() => {
-            addMessage("bot", "I received your message, but I need an image first! Please upload an image and then I can help you with your request. 📸");
-          }, 1000);
-        }
         return;
       }
       
-      // Default response for other cases
       setTimeout(() => {
         let botResponse = "I received your message! ";
         if (!uploadedImage) {
@@ -118,17 +108,20 @@ const ChatInterface = () => {
     }
   };
 
-  const handleSendText = () => {
-    if (inputText.trim()) {
-      addMessage("user", inputText.trim());
-      setInputText('');
-    }
-  };
+const handleSendText = () => {
+  if (inputText.trim() && uploadedImage && imageFile) {
+    addMessage("user", inputText.trim());
+    setIsProcessing(true);
+    sendImageAndPromptToBackend(inputText.trim(), imageFile);
+    setInputText('');
+  }
+};
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       const url = URL.createObjectURL(file);
+      setImageFile(file); // Store the image file
       addMessage("user", "I've uploaded an image", "image", url);
     }
     event.target.value = '';
@@ -138,6 +131,7 @@ const ChatInterface = () => {
     const file = event.target.files[0];
     if (file) {
       const url = URL.createObjectURL(file);
+      setImageFile(file); // Store the image file
       addMessage("user", "I've captured an image", "image", url);
     }
     event.target.value = '';
@@ -147,7 +141,7 @@ const ChatInterface = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus' // Use webm format which is widely supported
+        mimeType: 'audio/webm;codecs=opus'
       });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -160,13 +154,11 @@ const ChatInterface = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(audioBlob);
         
-        // Create a proper File object for backend compatibility
         const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, {
           type: 'audio/webm',
           lastModified: Date.now()
         });
         
-        // Store the file for backend submission
         console.log("🎙️ Audio file created:", {
           name: audioFile.name,
           type: audioFile.type,
@@ -174,11 +166,7 @@ const ChatInterface = () => {
         });
         
         addMessage("user", "Voice message", "audio", audioUrl, audioFile);
-        
-        // Send to backend for transcription
         sendAudioToBackend(audioFile);
-        
-        // Stop all tracks to turn off microphone
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -197,47 +185,86 @@ const ChatInterface = () => {
     }
   };
 
-  const handleProcessContent = () => {
-    console.log("🎯 Processing content...");
-    console.log("📸 Image status:", uploadedImage);
-    console.log("💬 Voice/Text status:", hasVoiceOrText);
-    
-    if (uploadedImage && hasVoiceOrText) {
-      setIsProcessing(true);
+  const sendAudioToBackend = async (audioFile) => {
+    try {
+      console.log("📤 Sending audio to backend...");
       
-      addMessage("bot", "Perfect! I have both your image and instructions. Processing now... ✨");
+      const formData = new FormData();
+      formData.append('audio', audioFile);
       
-      setTimeout(() => {
-        addMessage("bot", "Here's your processed content! I've created something amazing based on your image and instructions. 🎨", "fusion", "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZnVzaW9uR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZmY2YjZiO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmZjk5OTk7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNmdXNpb25HcmFkaWVudCkiIHJ4PSIxNSIvPgogIDx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+4pyoIFByb2Nlc3NlZCEg4pyoPC90ZXh0Pgo8L3N2Zz4=");
-        setIsProcessing(false);
-        
-        console.log("✅ Processing completed successfully!");
-      }, 2000);
-    } else {
-      console.log("❌ Cannot process - missing requirements:");
-      console.log("📸 Image:", uploadedImage);
-      console.log("💬 Voice/Text:", hasVoiceOrText);
+      console.log("📋 FormData prepared:", {
+        fileName: audioFile.name,
+        fileType: audioFile.type,
+        fileSize: audioFile.size
+      });
+      
+      const response = await fetch(`${BACKEND_API_URL}/api/v1/whisper/transcribe`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Backend response:", result);
+        localStorage.setItem('transcript', result.transcript || '');
+        setInputText(result.transcript || '');
+      } else {
+        console.error("❌ Backend error:", response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error("❌ Error sending audio to backend:", error);
     }
   };
 
-  // Function to handle transcript confirmation
+const sendImageAndPromptToBackend = async (prompt, imageFile) => {
+  try {
+    console.log("📤 Sending image and prompt to backend...");
+    
+    const formData = new FormData();
+    formData.append('prompt', prompt);
+    formData.append('selfie', imageFile); // Changed 'image' to 'selfie' to match backend expectation
+    
+    console.log("📋 FormData prepared:", {
+      prompt,
+      imageName: imageFile.name,
+      imageType: imageFile.type,
+      imageSize: imageFile.size
+    });
+    
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/image/generate-image`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log("✅ Backend response:", result);
+      
+      if (result.success && result.generatedImage) {
+        localStorage.setItem('generatedImage', result.generatedImage);
+        addMessage("bot", "Here's your generated image!", "fusion", result.generatedImage);
+      } else {
+        addMessage("bot", "Sorry, something went wrong while generating the image.");
+      }
+    } else {
+      console.error("❌ Backend error:", response.status, response.statusText);
+      addMessage("bot", "Failed to generate image. Please try again.");
+    }
+    setImageFile(null);
+setUploadedImage(false);
+setHasVoiceOrText(false);
+  } catch (error) {
+    console.error("❌ Error sending image and prompt to backend:", error);
+    addMessage("bot", "An error occurred while processing your request.");
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
   const handleTranscriptConfirmation = (isConfirmed, transcriptText) => {
     if (isConfirmed) {
       console.log("✅ User confirmed transcript:", transcriptText);
       setHasVoiceOrText(true);
-      
-      // Check if both conditions are met
-      if (uploadedImage) {
-        console.log("🚀 DEBUG: Both conditions met after confirmation!");
-        console.log("📸 Image uploaded:", uploadedImage);
-        console.log("💬 Voice confirmed:", transcriptText);
-        console.log("🎯 Ready to process!");
-        
-        // Auto-process when both conditions are met
-        setTimeout(() => {
-          handleProcessContent();
-        }, 1500);
-      }
     } else {
       console.log("❌ User rejected transcript, asking for new input");
       setTimeout(() => {
@@ -253,43 +280,6 @@ const ChatInterface = () => {
     link.click();
   };
 
-  // Function to send audio to backend
-  const sendAudioToBackend = async (audioFile) => {
-    try {
-      console.log("📤 Sending audio to backend...");
-      
-      const formData = new FormData();
-      formData.append('audio', audioFile); // Key 'audio' matches your backend expectation
-      
-      console.log("📋 FormData prepared:", {
-        fileName: audioFile.name,
-        fileType: audioFile.type,
-        fileSize: audioFile.size
-      });
-      
-      // Replace with your actual backend URL
-      const response = await fetch(`${BACKEND_API_URL}/api/v1/whisper/transcribe`, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Backend response:", result);
-        
-        // You can handle the transcription result here
-        // For example, add it as a bot message
-        setTimeout(() => {
-          addMessage("bot", `I heard: "${result.transcript || 'Audio processed successfully!'}" 🎙️`);
-        }, 500);
-      } else {
-        console.error("❌ Backend error:", response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error("❌ Error sending audio to backend:", error);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#fbf5df", fontFamily: "Arial, sans-serif" }}>
       {/* Header */}
@@ -301,7 +291,6 @@ const ChatInterface = () => {
           <button className="text-white hover:bg-white/10 transition-colors duration-300 p-2 rounded">
             <ArrowLeft className="w-5 h-5" />
           </button>
-
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border-2 border-white/20">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-200 to-pink-200 flex items-center justify-center">
@@ -314,14 +303,11 @@ const ChatInterface = () => {
             </div>
           </div>
         </div>
-
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
           <span className="text-sm text-white">Online</span>
         </div>
       </div>
-
-
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-280px)]">
@@ -345,7 +331,6 @@ const ChatInterface = () => {
                   />
                 </div>
               )}
-
               {message.mediaType === "audio" && message.mediaUrl && (
                 <div className="mb-2 flex items-center space-x-2 bg-black/10 rounded-lg p-2">
                   <div
@@ -363,7 +348,6 @@ const ChatInterface = () => {
                   </div>
                 </div>
               )}
-
               {message.mediaType === "confirmation" && (
                 <div className="mb-2 flex space-x-2">
                   <button
@@ -380,7 +364,6 @@ const ChatInterface = () => {
                   </button>
                 </div>
               )}
-
               {message.mediaType === "fusion" && message.mediaUrl && (
                 <div className="mb-2">
                   <img
@@ -397,7 +380,6 @@ const ChatInterface = () => {
                   </button>
                 </div>
               )}
-
               <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
               <p className={`text-xs mt-2 ${message.type === "user" ? "text-pink-100" : "text-gray-500"}`}>
                 {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -431,15 +413,13 @@ const ChatInterface = () => {
         )}
 
         <div className="flex items-end space-x-3">
-          {/* Media Buttons */}
           <div className="flex space-x-2">
-            {/* Voice Recording */}
             <button
               onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing || !uploadedImage}
+              disabled={isProcessing}
               className={`border-2 p-2 rounded transition-all duration-300 ${
                 isRecording ? "bg-red-500 border-red-500 text-white hover:bg-red-600" : "hover:scale-105"
-              } ${(isProcessing || !uploadedImage) ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}
               style={{
                 borderColor: isRecording ? "#ef4444" : "#ff6b6b",
                 color: isRecording ? "white" : "#ff6b6b",
@@ -447,8 +427,6 @@ const ChatInterface = () => {
             >
               {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
-
-            {/* File Upload */}
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isRecording || isProcessing}
@@ -457,8 +435,6 @@ const ChatInterface = () => {
             >
               <Upload className="w-4 h-4" />
             </button>
-
-            {/* Camera */}
             <button
               onClick={() => cameraInputRef.current?.click()}
               disabled={isRecording || isProcessing}
@@ -468,8 +444,6 @@ const ChatInterface = () => {
               <Camera className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Text Input */}
           <div className="flex-1 flex space-x-2">
             <input
               value={inputText}
@@ -482,17 +456,14 @@ const ChatInterface = () => {
                     ? "Recording..." 
                     : !uploadedImage
                       ? "Please upload an image first! 📸"
-                      : !hasVoiceOrText
-                        ? "Now tell me what to do with your image..."
-                        : "Ready! Upload another image to start over..."
+                      : "Now tell me what to do with your image..."
               }
               className="flex-1 border-2 rounded-xl p-3 focus:ring-2 transition-all duration-300"
               style={{
                 borderColor: "rgba(255, 107, 107, 0.3)",
               }}
-              disabled={isRecording || isProcessing || !uploadedImage}
+              disabled={isRecording || isProcessing}
             />
-
             <button
               onClick={handleSendText}
               disabled={!inputText.trim() || isRecording || isProcessing || !uploadedImage}
@@ -503,8 +474,6 @@ const ChatInterface = () => {
             </button>
           </div>
         </div>
-
-        {/* Hidden File Inputs */}
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
         <input
           ref={cameraInputRef}
