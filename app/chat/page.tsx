@@ -29,7 +29,7 @@ const ChatInterface = () => {
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const BACKEND_API_URL = "http://localhost:5000"; // Replace with your actual backend URL
+  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"; // Replace with your actual backend URL
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -111,6 +111,7 @@ const ChatInterface = () => {
 
   const handleSendText = () => {
     if (inputText.trim() && uploadedImage && imageFile) {
+      localStorage.setItem('prompt', inputText.trim());
       addMessage("user", inputText.trim());
       setIsProcessing(true);
       sendImageAndPromptToBackend(inputText.trim(), imageFile);
@@ -264,6 +265,7 @@ const ChatInterface = () => {
 
   const handleAnimateImage = async () => {
     const generatedImage = localStorage.getItem('generatedImage');
+    const prompt = localStorage.getItem('prompt')
     
     if (!generatedImage) {
       addMessage("bot", "No generated image found to animate. Please generate an image first!");
@@ -278,7 +280,7 @@ const ChatInterface = () => {
       
       const animationData = {
         imageUrl: generatedImage,
-        prompt: "give a very slight animation to blink her eyes, make her hair seem like getting a slight blow due to flowing air and show blowing effect on diya as well"
+        prompt
       };
 
       const response = await fetch(`${BACKEND_API_URL}/api/v1/video/generate-professional-video`, {
