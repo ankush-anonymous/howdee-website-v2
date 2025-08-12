@@ -100,7 +100,7 @@ export default function ChatPage() {
     }
 
     setIsAnimating(true)
-    addMessage("bot", "✨ Animating your image...")
+    addMessage("bot", "✨ Making your video...")
 
     try {
       const response = await fetch(`${BACKEND_API_URL}/api/v1/video/generate-professional-video`, {
@@ -283,6 +283,18 @@ export default function ChatPage() {
         <div className="text-lg">Happy Birthday</div>
       </div>
     </Button>
+    <Button
+      onClick={() => handlePromptClick("Happy Independence Day")}
+      disabled={!imageFile || isProcessing}
+      className="group relative w-40 h-40 text-white font-bold text-xl rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex flex-col items-center justify-center"
+      style={{ backgroundColor: "#ff6b6b" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="relative z-10 text-center">
+        <div className="text-5xl mb-3">🎂</div>
+        <div className="text-lg">Happy <br/> Independence</div>
+      </div>
+    </Button>
   </div>
 </div>
 
@@ -296,7 +308,7 @@ export default function ChatPage() {
             >
               <div className="flex items-center space-x-4">
                 <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#ff6b6b" }} />
-                <span className="text-lg font-semibold text-gray-700">Creating your magical greeting...</span>
+                <span className="text-lg font-semibold text-gray-700">Creating your image...</span>
               </div>
             </div>
           </div>
