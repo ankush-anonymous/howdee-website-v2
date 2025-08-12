@@ -1,772 +1,417 @@
-"use client";
-import React, { useState, useRef, useEffect } from "react";
-import {
-  Send,
-  Mic,
-  MicOff,
-  Camera,
-  Upload,
-  ArrowLeft,
-  Play,
-  Download,
-  Loader2,
-  Video,
-} from "lucide-react";
+"use client"
 
-const ChatInterface = () => {
+import { useState, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Upload, Camera, ArrowLeft, Loader2, Download, Video, Sparkles } from "lucide-react"
+import Link from "next/link"
+
+export default function ChatPage() {
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: "bot",
       content:
-        "Hello! I'm Howdee AI, your creative assistant. Please start by uploading an image first! 📸",
+        "Hi! I'm Howdee AI 👋 Upload your photo and choose an occasion to create amazing personalized greetings!",
       timestamp: new Date(),
-      mediaType: null,
-      mediaUrl: null,
     },
-  ]);
+  ])
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
 
-  const [inputText, setInputText] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [uploadedImage, setUploadedImage] = useState(false);
-  const [hasVoiceOrText, setHasVoiceOrText] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [imageFile, setImageFile] = useState(null);
+  const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
 
-  const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const recordingIntervalRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const BACKEND_API_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"; // Replace with your actual backend URL
+  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
 
-  // Auto scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Recording timer
-  useEffect(() => {
-    if (isRecording) {
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
-    } else {
-      clearInterval(recordingIntervalRef.current);
-      setRecordingTime(0);
-    }
-
-    return () => clearInterval(recordingIntervalRef.current);
-  }, [isRecording]);
-
-  // Load transcript from localStorage on mount
-  useEffect(() => {
-    const savedTranscript = localStorage.getItem("transcript");
-    if (savedTranscript) {
-      setInputText(savedTranscript);
-    }
-    setInputText("");
-    localStorage.removeItem("transcript");
-  }, []);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const addMessage = (
-    type,
-    content,
-    mediaType = null,
-    mediaUrl = null,
-    audioFile = null,
-    transcriptText = null
-  ) => {
-    const newMessage = {
-      id: Date.now(),
-      type,
-      content,
-      timestamp: new Date(),
-      mediaType,
-      mediaUrl,
-      audioFile,
-      transcriptText,
-    };
-    setMessages((prev) => [...prev, newMessage]);
-
-    if (type === "user") {
-      if (mediaType === "image") {
-        setUploadedImage(true);
-        setTimeout(() => {
-          addMessage(
-            "bot",
-            "Great! I can see your image. Now just say - HAPPY BIRTHDAY or HAPPY DIWALI"
-          );
-        }, 1000);
-        return;
-      }
-
-      if (mediaType === "audio") {
-        return;
-      } 
-
-      if (mediaType === null && content.trim()) {
-        setHasVoiceOrText(true);
-        return;
-      }
-
-      setTimeout(() => {
-        let botResponse = "I received your message! ";
-        if (!uploadedImage) {
-          botResponse = "Please upload an image first so I can help you! 📸";
-        } else if (!hasVoiceOrText) {
-          botResponse =
-            "Now tell me what you'd like me to do with your image! 💬";
-        }
-        addMessage("bot", botResponse);
-      }, 1000);
-    }
-  };
-
-  const handleSendText = () => {
-    if (inputText.trim() && uploadedImage && imageFile) {
-      localStorage.setItem("prompt", inputText.trim());
-      addMessage("user", inputText.trim());
-      setIsProcessing(true);
-      sendImageAndPromptToBackend(inputText.trim(), imageFile);
-      setInputText("");
-    }
-  };
+  const addMessage = (type, content, mediaType = null, mediaUrl = null) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        type,
+        content,
+        timestamp: new Date(),
+        mediaType,
+        mediaUrl,
+      },
+    ])
+  }
 
   const handleFileUpload = (event) => {
-    const file = event.target.files[0];
+    const file = event.target.files[0]
     if (file) {
-      const url = URL.createObjectURL(file);
-      setImageFile(file);
-      addMessage("user", "I've uploaded an image", "image", url);
+      const url = URL.createObjectURL(file)
+      setImageFile(file)
+      setImagePreview(url)
+      addMessage("user", "I've uploaded an image", "image", url)
     }
-    event.target.value = "";
-  };
+  }
 
-  const handleCameraCapture = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImageFile(file);
-      addMessage("user", "I've captured an image", "image", url);
+  const sendImageAndPromptToBackend = async (prompt) => {
+    if (!imageFile) {
+      addMessage("bot", "Please upload an image first 📸")
+      return
     }
-    event.target.value = "";
-  };
+    setIsProcessing(true)
 
-  const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=opus",
-      });
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+      const formData = new FormData()
+      formData.append("prompt", prompt)
+      formData.append("selfie", imageFile)
 
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        const audioUrl = URL.createObjectURL(audioBlob);
-
-        const audioFile = new File(
-          [audioBlob],
-          `recording-${Date.now()}.webm`,
-          {
-            type: "audio/webm",
-            lastModified: Date.now(),
-          }
-        );
-
-        console.log("🎙️ Audio file created:", {
-          name: audioFile.name,
-          type: audioFile.type,
-          size: audioFile.size,
-        });
-
-        addMessage("user", "Voice message", "audio", audioUrl, audioFile);
-        sendAudioToBackend(audioFile);
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      alert("Unable to access microphone. Please check your permissions.");
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const sendAudioToBackend = async (audioFile) => {
-    try {
-      console.log("📤 Sending audio to backend...");
-
-      const formData = new FormData();
-      formData.append("audio", audioFile);
-
-      console.log("📋 FormData prepared:", {
-        fileName: audioFile.name,
-        fileType: audioFile.type,
-        fileSize: audioFile.size,
-      });
-
-      const response = await fetch(
-        `${BACKEND_API_URL}/api/v1/whisper/transcribe`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const response = await fetch(`${BACKEND_API_URL}/api/v1/image/generate-image`, {
+        method: "POST",
+        body: formData,
+      })
 
       if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Backend response:", result);
-        localStorage.setItem("transcript", result.transcript || "");
-        setInputText(result.transcript || "");
-      } else {
-        console.error(
-          "❌ Backend error:",
-          response.status,
-          response.statusText
-        );
-      }
-    } catch (error) {
-      console.error("❌ Error sending audio to backend:", error);
-    }
-  };
-
-  const sendImageAndPromptToBackend = async (prompt, imageFile) => {
-    try {
-      console.log("📤 Sending image and prompt to backend...");
-
-      const formData = new FormData();
-      formData.append("prompt", prompt);
-      formData.append("selfie", imageFile);
-
-      console.log("📋 FormData prepared:", {
-        prompt,
-        imageName: imageFile.name,
-        imageType: imageFile.type,
-        imageSize: imageFile.size,
-      });
-
-      const response = await fetch(
-        `${BACKEND_API_URL}/api/v1/image/generate-image`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Backend response:", result);
-
+        const result = await response.json()
         if (result.success && result.generatedImage) {
-          localStorage.setItem("generatedImage", result.generatedImage);
-          addMessage(
-            "bot",
-            "Here's your generated image!",
-            "fusion",
-            result.generatedImage
-          );
+          localStorage.setItem("generatedImage", result.generatedImage)
+          localStorage.setItem("prompt", prompt)
+          addMessage("bot", "Here's your generated image!", "fusion", result.generatedImage)
         } else {
-          addMessage(
-            "bot",
-            "Sorry, something went wrong while generating the image."
-          );
+          addMessage("bot", "Something went wrong while generating the image.")
         }
       } else {
-        console.error(
-          "❌ Backend error:",
-          response.status,
-          response.statusText
-        );
-        addMessage("bot", "Failed to generate image. Please try again.");
+        addMessage("bot", "Failed to generate image. Please try again.")
       }
-      setImageFile(null);
-      setUploadedImage(false);
-      setHasVoiceOrText(false);
     } catch (error) {
-      console.error("❌ Error sending image and prompt to backend:", error);
-      addMessage("bot", "An error occurred while processing your request.");
+      console.error(error)
+      addMessage("bot", "An error occurred while processing your request.")
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
+
+  const handlePromptClick = (prompt) => {
+    addMessage("user", prompt)
+    sendImageAndPromptToBackend(prompt)
+  }
 
   const handleAnimateImage = async () => {
-    const generatedImage = localStorage.getItem("generatedImage");
-    const prompt = localStorage.getItem("prompt");
-
+    const generatedImage = localStorage.getItem("generatedImage")
+    const prompt = localStorage.getItem("prompt")
     if (!generatedImage) {
-      addMessage(
-        "bot",
-        "No generated image found to animate. Please generate an image first!"
-      );
-      return;
+      addMessage("bot", "Please generate an image first.")
+      return
     }
 
-    setIsAnimating(true);
-    addMessage("bot", "✨ Animating your image... This may take a moment!");
+    setIsAnimating(true)
+    addMessage("bot", "✨ Animating your image...")
 
     try {
-      console.log("🎬 Sending image for animation...");
-
-      const animationData = {
-        imageUrl: generatedImage,
-        prompt,
-      };
-
-      const response = await fetch(
-        `${BACKEND_API_URL}/api/v1/video/generate-professional-video`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(animationData),
-        }
-      );
+      const response = await fetch(`${BACKEND_API_URL}/api/v1/video/generate-professional-video`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: generatedImage, prompt }),
+      })
 
       if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Animation response:", result);
-
+        const result = await response.json()
         if (result.success && result.videoUrl) {
-          addMessage(
-            "bot",
-            "🎬 Your animated video is ready!",
-            "video",
-            result.videoUrl
-          );
-          localStorage.setItem("animatedVideo", result.videoUrl);
+          addMessage("bot", "🎬 Your animated video is ready!", "video", result.videoUrl)
         } else {
-          addMessage(
-            "bot",
-            "Sorry, something went wrong while animating the image."
-          );
+          addMessage("bot", "Something went wrong while animating the image.")
         }
       } else {
-        console.error(
-          "❌ Animation error:",
-          response.status,
-          response.statusText
-        );
-        addMessage("bot", "Failed to animate image. Please try again.");
+        addMessage("bot", "Failed to animate image.")
       }
     } catch (error) {
-      console.error("❌ Error animating image:", error);
-      addMessage("bot", "An error occurred while animating your image.");
+      console.error(error)
+      addMessage("bot", "Error animating image.")
     } finally {
-      setIsAnimating(false);
+      setIsAnimating(false)
     }
-  };
+  }
 
-  const handleTranscriptConfirmation = (isConfirmed, transcriptText) => {
-    if (isConfirmed) {
-      console.log("✅ User confirmed transcript:", transcriptText);
-      setHasVoiceOrText(true);
-    } else {
-      console.log("❌ User rejected transcript, asking for new input");
-      setTimeout(() => {
-        addMessage(
-          "bot",
-          "No problem! Please try recording again or type your message instead. 🎤✍️"
-        );
-      }, 500);
-    }
-  };
-
-  const downloadImage = (url) => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "fusion-image.png";
-    link.click();
-  };
-
-  const downloadVideo = (url) => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "animated-video.mp4";
-    link.click();
-  };
-
-  // Add this new function inside your ChatInterface component
   const handleDownload = async (url, filename) => {
     try {
-      // 1. Fetch the file from the URL
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      // 2. Get the data as a Blob
-      const blob = await response.blob();
-
-      // 3. Create a temporary URL for the blob
-      const objectUrl = URL.createObjectURL(blob);
-
-      // 4. Create a temporary anchor element and trigger the download
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = filename; // Use the provided filename
-      document.body.appendChild(link); // Append to the body
-      link.click(); // Programmatically click the link to trigger the download
-      document.body.removeChild(link); // Remove the link from the document
-
-      // 5. Revoke the temporary URL to free up memory
-      URL.revokeObjectURL(objectUrl);
-    } catch (error) {
-      console.error("Download failed:", error);
-      addMessage("bot", "Sorry, the download failed. Please try again.");
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = objectUrl
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      addMessage("bot", "Download failed.")
     }
-  };
+  }
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: "#fbf5df", fontFamily: "Arial, sans-serif" }}
-    >
+    <div className="min-h-screen" style={{ backgroundColor: "#fbf5df", fontFamily: "Arial, sans-serif" }}>
       {/* Header */}
-      <div
-        className="flex items-center justify-between p-4 shadow-lg border-b-2"
-        style={{
-          backgroundColor: "#ff6b6b",
-          borderColor: "rgba(255, 255, 255, 0.2)",
-        }}
-      >
+      <div className="flex items-center justify-between p-6">
+        <Link href="/">
+          <Button
+            variant="ghost"
+            className="hover:bg-red-50 transition-colors duration-200 text-lg"
+            style={{ color: "#ff6b6b" }}
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Back to Home
+          </Button>
+        </Link>
+
         <div className="flex items-center space-x-4">
-          <button className="text-white hover:bg-white/10 transition-colors duration-300 p-2 rounded">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border-2 border-white/20">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-200 to-pink-200 flex items-center justify-center">
-                <span className="text-red-600 font-bold text-sm">
-                  <img src="logo2.png" alt="Howdee AI Logo" className="w-6 h-6" />
-                </span>
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+            style={{ backgroundColor: "#ff6b6b" }}
+          >
+            <img src="/logo2.png" alt="Howdee Logo" className="w-10 h-10" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Howdee AI Studio</h1>
+            <p className="text-sm text-gray-600">Create Amazing Greetings</p>
+          </div>
+        </div>
+
+        <div className="w-32"></div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Welcome Message */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4" style={{ color: "#ff6b6b" }}>
+            Create Your Perfect Greeting
+          </h2>
+          <p className="text-xl text-gray-700">Upload your photo and choose an occasion to get started</p>
+        </div>
+
+        {/* Image Upload Section */}
+        <div className="mb-12">
+          {imagePreview ? (
+            <div className="flex justify-center mb-8">
+              <div className="relative">
+                <img
+                  src={imagePreview || "/placeholder.svg"}
+                  alt="Preview"
+                  className="w-48 h-48 object-cover rounded-2xl border-4 shadow-xl"
+                  style={{ borderColor: "#ff6b6b" }}
+                />
+                <button
+                  onClick={() => {
+                    setImagePreview(null)
+                    setImageFile(null)
+                  }}
+                  className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-lg hover:bg-red-600 shadow-lg"
+                >
+                  ×
+                </button>
               </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">Howdee </h1>
-              <p className="text-sm text-pink-100">Wish Better with AI</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-          <span className="text-sm text-white">Online</span>
-        </div>
-      </div>
-
-      {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-280px)]">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.type === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg ${
-                message.type === "user"
-                  ? "text-white rounded-br-sm"
-                  : "bg-white text-gray-800 rounded-bl-sm border-2"
-              }`}
-              style={{
-                backgroundColor: message.type === "user" ? "#ff6b6b" : "white",
-                borderColor:
-                  message.type === "bot"
-                    ? "rgba(255, 107, 107, 0.1)"
-                    : "transparent",
-              }}
-            >
-              {message.mediaType === "image" && message.mediaUrl && (
-                <div className="mb-2">
-                  <img
-                    src={message.mediaUrl}
-                    alt="Uploaded content"
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                </div>
-              )}
-              {message.mediaType === "audio" && message.mediaUrl && (
-                <div className="mb-2 flex items-center space-x-2 bg-black/10 rounded-lg p-2">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{
-                      backgroundColor:
-                        message.type === "user"
-                          ? "rgba(255,255,255,0.2)"
-                          : "#ff6b6b",
-                    }}
-                  >
-                    <Play className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs opacity-75">Voice Message</div>
-                    <audio controls className="w-full h-6">
-                      <source src={message.mediaUrl} type="audio/webm" />
-                      Your browser does not support the audio element.
-                    </audio>
-                  </div>
-                </div>
-              )}
-              {message.mediaType === "confirmation" && (
-                <div className="mb-2 flex space-x-2">
-                  <button
-                    onClick={() =>
-                      handleTranscriptConfirmation(true, message.transcriptText)
-                    }
-                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex-1"
-                  >
-                    ✅ Yes, that's correct
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleTranscriptConfirmation(
-                        false,
-                        message.transcriptText
-                      )
-                    }
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex-1"
-                  >
-                    ❌ No, try again
-                  </button>
-                </div>
-              )}
-              {message.mediaType === "fusion" && message.mediaUrl && (
-                <div className="mb-2">
-                  <img
-                    src={message.mediaUrl}
-                    alt="Processed content"
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                  <div className="flex space-x-2 mt-2">
-                    <button
-                      onClick={() =>
-                        handleDownload(
-                          message.mediaUrl,
-                          `howdee-ai-image-${Date.now()}.png`
-                        )
-                      }
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-                    >
-                      <Download className="w-4 h-4 mr-2 inline" />
-                      Download Image
-                    </button>
-                    <button
-                      onClick={handleAnimateImage}
-                      disabled={isAnimating}
-                      className="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Video className="w-4 h-4 mr-2 inline" />
-                      {isAnimating ? "Animating..." : "Animate"}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {message.mediaType === "video" && message.mediaUrl && (
-                <div className="mb-2">
-                  <video
-                    src={message.mediaUrl}
-                    controls
-                    className="w-full h-48 object-cover rounded-lg"
-                    poster=""
-                  >
-                    Your browser does not support the video element.
-                  </video>
-                  <button
-                    onClick={() => downloadVideo(message.mediaUrl)}
-                    className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-                  >
-                    <Download className="w-4 h-4 mr-2 inline" />
-                    Download Video
-                  </button>
-                </div>
-              )}
-              <p className="text-sm leading-relaxed whitespace-pre-line">
-                {message.content}
-              </p>
-              <p
-                className={`text-xs mt-2 ${
-                  message.type === "user" ? "text-pink-100" : "text-gray-500"
-                }`}
+          ) : (
+            <div className="flex justify-center mb-8">
+              <div
+                className="w-48 h-48 border-4 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-red-50 transition-all duration-300"
+                style={{ borderColor: "#ff6b6b" }}
+                onClick={() => fileInputRef.current?.click()}
               >
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
+                <Upload className="w-12 h-12 mb-4" style={{ color: "#ff6b6b" }} />
+                <p className="text-gray-600 text-center">
+                  Click to upload
+                  <br />
+                  your photo
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+          )}
 
-      {/* Processing Indicators */}
-      {isProcessing && (
-        <div className="mx-4 mb-4 flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border-2 border-purple-200">
-          <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
-          <span className="text-purple-600 font-medium">
-            Processing your content... ✨
-          </span>
-        </div>
-      )}
-
-      {isAnimating && (
-        <div className="mx-4 mb-4 flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border-2 border-blue-200">
-          <Video className="w-5 h-5 text-blue-600 animate-pulse" />
-          <span className="text-blue-600 font-medium">
-            Creating your animated video... 🎬
-          </span>
-        </div>
-      )}
-
-      {/* Input Area */}
-      <div
-        className="p-4 border-t-2"
-        style={{ borderColor: "rgba(255, 107, 107, 0.1)" }}
-      >
-        {/* Recording Indicator */}
-        {isRecording && (
-          <div className="mb-4 flex items-center justify-center space-x-3 bg-red-50 rounded-lg p-3 border-2 border-red-200">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-            <span className="text-red-600 font-medium">
-              Recording... {formatTime(recordingTime)}
-            </span>
-            <button
-              onClick={stopRecording}
-              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+          {/* Upload Buttons */}
+          <div className="flex justify-center space-x-6">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-8 py-4 bg-white border-3 font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              style={{ borderColor: "#ff6b6b", color: "#ff6b6b" }}
             >
-              <MicOff className="w-4 h-4 mr-1 inline" />
-              Stop
-            </button>
+              <Upload className="w-6 h-6 mr-3" />
+              Upload from Device
+            </Button>
+
+            <Button
+              onClick={() => cameraInputRef.current?.click()}
+              className="px-8 py-4 bg-white border-3 font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              style={{ borderColor: "#ff6b6b", color: "#ff6b6b" }}
+            >
+              <Camera className="w-6 h-6 mr-3" />
+              Take Photo
+            </Button>
+          </div>
+
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+        </div>
+
+        {/* Occasion Selection */}
+<div className="mb-12">
+  <h3 className="text-2xl font-bold text-center mb-8 text-gray-800">Choose Your Occasion</h3>
+  <div className="flex justify-center space-x-8">
+    <Button
+      onClick={() => handlePromptClick("Happy Diwali")}
+      disabled={!imageFile || isProcessing}
+      className="group relative w-40 h-40 text-white font-bold text-xl rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex flex-col items-center justify-center"
+      style={{ backgroundColor: "#ff6b6b" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="relative z-10 text-center">
+        <div className="text-5xl mb-3">🎆</div>
+        <div className="text-lg">Happy Diwali</div>
+      </div>
+    </Button>
+
+    <Button
+      onClick={() => handlePromptClick("Happy Birthday")}
+      disabled={!imageFile || isProcessing}
+      className="group relative w-40 h-40 text-white font-bold text-xl rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex flex-col items-center justify-center"
+      style={{ backgroundColor: "#ff6b6b" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="relative z-10 text-center">
+        <div className="text-5xl mb-3">🎂</div>
+        <div className="text-lg">Happy Birthday</div>
+      </div>
+    </Button>
+  </div>
+</div>
+
+
+        {/* Processing Indicators */}
+        {isProcessing && (
+          <div className="flex justify-center mb-8">
+            <div
+              className="bg-white px-8 py-4 rounded-2xl shadow-lg border-2"
+              style={{ borderColor: "rgba(255, 107, 107, 0.2)" }}
+            >
+              <div className="flex items-center space-x-4">
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#ff6b6b" }} />
+                <span className="text-lg font-semibold text-gray-700">Creating your magical greeting...</span>
+              </div>
+            </div>
           </div>
         )}
 
-        <div className="flex items-end space-x-3">
-          <div className="flex space-x-2">
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing || isAnimating}
-              className={`border-2 p-2 rounded transition-all duration-300 ${
-                isRecording
-                  ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
-                  : "hover:scale-105"
-              } ${
-                isProcessing || isAnimating
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-              style={{
-                borderColor: isRecording ? "#ef4444" : "#ff6b6b",
-                color: isRecording ? "white" : "#ff6b6b",
-              }}
+        {isAnimating && (
+          <div className="flex justify-center mb-8">
+            <div
+              className="bg-white px-8 py-4 rounded-2xl shadow-lg border-2"
+              style={{ borderColor: "rgba(255, 107, 107, 0.2)" }}
             >
-              {isRecording ? (
-                <MicOff className="w-4 h-4" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isRecording || isProcessing || isAnimating}
-              className="border-2 p-2 rounded hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ borderColor: "#ff6b6b", color: "#ff6b6b" }}
-            >
-              <Upload className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => cameraInputRef.current?.click()}
-              disabled={isRecording || isProcessing || isAnimating}
-              className="border-2 p-2 rounded hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ borderColor: "#ff6b6b", color: "#ff6b6b" }}
-            >
-              <Camera className="w-4 h-4" />
-            </button>
+              <div className="flex items-center space-x-4">
+                <Video className="w-8 h-8 animate-pulse" style={{ color: "#ff6b6b" }} />
+                <span className="text-lg font-semibold text-gray-700">Adding animation magic...</span>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 flex space-x-2">
-            <input
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={(e) =>
-                e.key === "Enter" && !e.shiftKey && handleSendText()
-              }
-              placeholder={
-                isProcessing
-                  ? "Processing content..."
-                  : isAnimating
-                  ? "Creating animation..."
-                  : isRecording
-                  ? "Recording..."
-                  : !uploadedImage
-                  ? "Please upload an image first! 📸"
-                  : "Now tell me what to do with your image..."
-              }
-              className="flex-1 border-2 rounded-xl p-3 focus:ring-2 transition-all duration-300"
-              style={{
-                borderColor: "rgba(255, 107, 107, 0.3)",
-              }}
-              disabled={isRecording || isProcessing || isAnimating}
-            />
-            <button
-              onClick={handleSendText}
-              disabled={
-                !inputText.trim() ||
-                isRecording ||
-                isProcessing ||
-                isAnimating ||
-                !uploadedImage
-              }
-              className="text-white font-medium px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: "#ff6b6b" }}
-            >
-              <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-            </button>
-          </div>
+        )}
+
+        {/* Results Display */}
+        <div className="space-y-6">
+          {messages.slice(1).map((message) => (
+            <div key={message.id} className="flex justify-center">
+              <div className="max-w-md w-full">
+                {message.mediaType === "image" && (
+                  <div
+                    className="bg-white rounded-2xl p-6 shadow-lg border-2"
+                    style={{ borderColor: "rgba(255, 107, 107, 0.1)" }}
+                  >
+                    <img
+                      src={message.mediaUrl || "/placeholder.svg"}
+                      alt="Uploaded"
+                      className="w-full h-64 object-cover rounded-xl mb-4"
+                    />
+                    <p className="text-center text-gray-700 font-medium">{message.content}</p>
+                  </div>
+                )}
+
+                {message.mediaType === "fusion" && (
+                  <div
+                    className="bg-white rounded-2xl p-6 shadow-lg border-2"
+                    style={{ borderColor: "rgba(255, 107, 107, 0.1)" }}
+                  >
+                    <img
+                      src={message.mediaUrl || "/placeholder.svg"}
+                      alt="Generated"
+                      className="w-full h-64 object-cover rounded-xl mb-4"
+                    />
+                    <p className="text-center text-gray-700 font-medium mb-4">{message.content}</p>
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={() => handleDownload(message.mediaUrl, `howdee-ai-image-${Date.now()}.png`)}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl"
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Download Image
+                      </Button>
+                      <Button
+                        onClick={handleAnimateImage}
+                        disabled={isAnimating}
+                        className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
+                      >
+                        <Video className="w-5 h-5 mr-2" />
+                        Create Video
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {message.mediaType === "video" && (
+                  <div
+                    className="bg-white rounded-2xl p-6 shadow-lg border-2"
+                    style={{ borderColor: "rgba(255, 107, 107, 0.1)" }}
+                  >
+                    <video src={message.mediaUrl} controls className="w-full h-64 object-cover rounded-xl mb-4" />
+                    <p className="text-center text-gray-700 font-medium mb-4">{message.content}</p>
+                    <Button
+                      onClick={() => handleDownload(message.mediaUrl, "animated-video.mp4")}
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Download Video
+                    </Button>
+                  </div>
+                )}
+
+                {!message.mediaType && message.type === "bot" && (
+                  <div
+                    className="bg-white rounded-2xl p-6 shadow-lg border-2 text-center"
+                    style={{ borderColor: "rgba(255, 107, 107, 0.1)" }}
+                  >
+                    <p className="text-gray-700 font-medium">{message.content}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileUpload}
-          className="hidden"
+      </div>
+
+      {/* Floating decorative elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute top-20 left-20 w-4 h-4 rounded-full opacity-20 animate-float"
+          style={{ backgroundColor: "#ff6b6b" }}
         />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment" // or "user" for front-facing camera
-          onChange={handleCameraCapture}
-          className="hidden"
+        <div
+          className="absolute bottom-32 right-32 w-6 h-6 rounded-full opacity-15 animate-pulse"
+          style={{ backgroundColor: "#ff6b6b" }}
+        />
+        <div
+          className="absolute top-1/3 right-1/4 w-3 h-3 rounded-full opacity-25 animate-bounce"
+          style={{ backgroundColor: "#ff6b6b" }}
         />
       </div>
     </div>
-  );
-};
-
-export default ChatInterface;
+  )
+}
