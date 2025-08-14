@@ -291,7 +291,7 @@ export default function ChatPage() {
     >
       <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <div className="relative z-10 text-center">
-        <div className="text-5xl mb-3">🎂</div>
+        <div className="text-5xl mb-3">🇮🇳</div>
         <div className="text-lg">Happy <br/> Independence</div>
       </div>
     </Button>
