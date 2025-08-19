@@ -112,6 +112,7 @@ export default function ChatPage() {
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.videoUrl) {
+          console.log("Video URL:", result.videoUrl);
           addMessage("bot", "🎬 Your animated video is ready!", "video", result.videoUrl)
         } else {
           addMessage("bot", "Something went wrong while animating the image.")
@@ -284,6 +285,30 @@ export default function ChatPage() {
       </div>
     </Button>
     <Button
+      onClick={() => handlePromptClick("Good Morning")}
+      disabled={!imageFile || isProcessing}
+      className="group relative w-40 h-40 text-white font-bold text-xl rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex flex-col items-center justify-center"
+      style={{ backgroundColor: "#ff6b6b" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="relative z-10 text-center">
+        <div className="text-5xl mb-3">☀️</div>
+        <div className="text-lg">Good Morning</div>
+      </div>
+    </Button>
+    <Button
+      onClick={() => handlePromptClick("Good Night")}
+      disabled={!imageFile || isProcessing}
+      className="group relative w-40 h-40 text-white font-bold text-xl rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex flex-col items-center justify-center"
+      style={{ backgroundColor: "#ff6b6b" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="relative z-10 text-center">
+        <div className="text-5xl mb-3">🌙</div>
+        <div className="text-lg">Good Night</div>
+      </div>
+    </Button>
+    {/* <Button
       onClick={() => handlePromptClick("Happy Independence Day")}
       disabled={!imageFile || isProcessing}
       className="group relative w-40 h-40 text-white font-bold text-xl rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex flex-col items-center justify-center"
@@ -294,7 +319,8 @@ export default function ChatPage() {
         <div className="text-5xl mb-3">🇮🇳</div>
         <div className="text-lg">Happy <br/> Independence</div>
       </div>
-    </Button>
+    </Button> */}
+
   </div>
 </div>
 
